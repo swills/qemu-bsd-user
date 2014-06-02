@@ -37,6 +37,7 @@
 #include "qemu/envlist.h"
 #include "exec/log.h"
 #include "trace/control.h"
+#include "qemu/error-report.h"
 
 #include "host_os.h"
 #include "target_arch_cpu.h"

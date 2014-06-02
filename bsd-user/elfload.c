@@ -19,6 +19,7 @@
 #include "qemu/osdep.h"
 
 #include "qemu.h"
+#include "qemu/error-report.h"
 #include "disas/disas.h"
 #include "target_os_elf.h"
 #include "target_os_stack.h"

@@ -18,6 +18,7 @@
 #include "qemu/osdep.h"
 
 #include "qemu.h"
+#include "qemu/error-report.h"
 
 #define TARGET_NGROUPS 32
 
