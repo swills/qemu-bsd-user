@@ -344,7 +344,10 @@ int main(int argc, char **argv)
     save_proc_pathname(argv[0]);
     module_call_init(MODULE_INIT_QOM);
 
-    envlist = envlist_create();
+    if ((envlist = envlist_create()) == NULL) {
+        (void) fprintf(stderr, "Unable to allocate envlist\n");
+        exit(1);
+    }
 
     /* add current environment into the list */
     for (wrk = environ; *wrk != NULL; wrk++) {
@@ -382,7 +385,10 @@ int main(int argc, char **argv)
                 usage();
         } else if (!strcmp(r, "ignore-environment")) {
             envlist_free(envlist);
-            envlist = envlist_create();
+            if ((envlist = envlist_create()) == NULL) {
+                (void) fprintf(stderr, "Unable to allocate envlist\n");
+                exit(1);
+            }
         } else if (!strcmp(r, "U")) {
             r = argv[optind++];
             if (envlist_unsetenv(envlist, r) != 0)
