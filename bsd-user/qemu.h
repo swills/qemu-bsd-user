@@ -112,6 +112,7 @@ typedef struct TaskState {
 
 void init_task_state(TaskState *ts);
 void stop_all_tasks(void);
+extern const char *interp_prefix;
 extern const char *qemu_uname_release;
 extern unsigned long mmap_min_addr;
 
