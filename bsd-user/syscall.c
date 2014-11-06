@@ -358,6 +358,7 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
         ret = do_freebsd_cap_enter();
         break;
 
+#if defined(__FreeBSD_version) && __FreeBSD_version < 1000000
     case TARGET_FREEBSD_NR_cap_new: /* cap_new(2) */
         ret = do_freebsd_cap_new(arg1, arg2);
         break;
@@ -365,6 +366,7 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
     case TARGET_FREEBSD_NR_cap_getrights: /* cap_getrights(2) */
         ret = do_freebsd_cap_getrights(arg1, arg2);
         break;
+#endif /* __FreeBSD_version < 1000000 */
 
     case TARGET_FREEBSD_NR_cap_getmode: /* cap_getmode(2) */
         ret = do_freebsd_cap_getmode(arg1);
@@ -1054,9 +1056,11 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
         ret = do_bsd_kill(arg1, arg2);
         break;
 
+#if defined(__FreeBSD_version) && __FreeBSD_version < 1000000
     case TARGET_FREEBSD_NR_killpg: /* killpg(2) */
         ret = do_bsd_killpg(arg1, arg2);
         break;
+#endif
 
     case TARGET_FREEBSD_NR_pdkill: /* pdkill(2) */
         ret = do_freebsd_pdkill(arg1, arg2);
@@ -1220,6 +1224,7 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
         ret = do_freebsd_swapcontext(cpu_env, arg1, arg2);
         break;
 
+#if defined(__FreeBSD_version) && __FreeBSD_version < 1000000
     case TARGET_FREEBSD_NR__umtx_lock: /* undocumented */
         ret = do_freebsd__umtx_lock(arg1);
         break;
@@ -1227,6 +1232,7 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
     case TARGET_FREEBSD_NR__umtx_unlock: /* undocumented */
         ret = do_freebsd__umtx_unlock(arg1);
         break;
+#endif
 
     case TARGET_FREEBSD_NR__umtx_op: /* undocumented */
         ret = do_freebsd__umtx_op(arg1, arg2, arg3, arg4, arg5);
@@ -1630,6 +1636,7 @@ abi_long do_freebsd_syscall(void *cpu_env, int num, abi_long arg1,
 	break;
 
     default:
+	gemu_log("qemu: unsupported syscall: %d (calling anyway)\n", num);
         ret = get_errno(syscall(num, arg1, arg2, arg3, arg4, arg5, arg6, arg7,
                     arg8));
         break;
