@@ -95,6 +95,7 @@ static pthread_mutex_t exclusive_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t exclusive_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t exclusive_resume = PTHREAD_COND_INITIALIZER;
 static int pending_cpus;
+static int sleeping_cpus;
 static CPUState *exclusive_cpu;
 
 /* Make sure everything is in a consistent state for calling fork(). */
@@ -143,8 +144,13 @@ void fork_end(int child)
  */
 static inline void exclusive_idle(void)
 {
-    while (pending_cpus > 1 || (pending_cpus == 1 && exclusive_cpu != thread_cpu)) {
+    while (exclusive_cpu != NULL && exclusive_cpu != thread_cpu) {
+	if (thread_cpu->running)
+		sleeping_cpus++;
+	pthread_cond_signal(&exclusive_cond);
         pthread_cond_wait(&exclusive_resume, &exclusive_lock);
+	if (thread_cpu->running)
+		sleeping_cpus--;
     }
 }
 
@@ -155,19 +161,24 @@ void start_exclusive(void)
 
     pthread_mutex_lock(&exclusive_lock);
     exclusive_idle();
-
-    pending_cpus = 1;
-    /* Make all other cpus stop executing. */
-    CPU_FOREACH(other_cpu) {
-        if (other_cpu != thread_cpu && other_cpu->running) {
-            pending_cpus++;
-            cpu_exit(other_cpu);
-        }
-    }
-    if (pending_cpus > 1) {
-        pthread_cond_wait(&exclusive_cond, &exclusive_lock);
-    }
+    
     exclusive_cpu = thread_cpu;
+
+    do {
+	    pending_cpus = 1;
+	    /* Make all other cpus stop executing. */
+	    CPU_FOREACH(other_cpu) {
+		    if (other_cpu != thread_cpu && other_cpu->running) {
+			    pending_cpus++;
+			    cpu_exit(other_cpu);
+		    }
+	    }
+	    if ((pending_cpus - sleeping_cpus) > 1) {
+		    pthread_cond_wait(&exclusive_cond, &exclusive_lock);
+	    } else
+		    break;
+    } while (1);
+    
 }
 
 /* Finish an exclusive operation. */
@@ -205,10 +216,10 @@ void cpu_exec_end(CPUState *cpu)
      * but it will returns using longjmp, so we never have the opportunity to
      * call end_exclusive()
      */
-    if (exclusive_cpu == thread_cpu && pending_cpus == 1) {
+    if (exclusive_cpu == thread_cpu) {
 	    pending_cpus--;
 	    exclusive_cpu = NULL;
-	    pthread_cond_signal(&exclusive_resume);
+	    pthread_cond_broadcast(&exclusive_resume);
     }
     pthread_mutex_unlock(&exclusive_lock);
 }
