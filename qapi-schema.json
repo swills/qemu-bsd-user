@@ -1778,7 +1778,25 @@
 #
 # Dump guest's storage keys
 #
-# @filename: the path to the file to dump to
+# Since 1.2
+##
+{ 'union': 'NetLegacyOptions',
+  'data': {
+    'none':     'NetdevNoneOptions',
+    'nic':      'NetLegacyNicOptions',
+    'user':     'NetdevUserOptions',
+    'tap':      'NetdevTapOptions',
+    'pcap':     'NetdevPcapOptions',
+    'l2tpv3':   'NetdevL2TPv3Options',
+    'socket':   'NetdevSocketOptions',
+    'vde':      'NetdevVdeOptions',
+    'dump':     'NetdevDumpOptions',
+    'bridge':   'NetdevBridgeOptions',
+    'netmap':   'NetdevNetmapOptions',
+    'vhost-user': 'NetdevVhostUserOptions' } }
+
+##
+# @NetFilterDirection
 #
 # This command is only supported on s390 architecture.
 #
