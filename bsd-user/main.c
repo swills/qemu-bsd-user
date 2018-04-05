@@ -20,16 +20,12 @@
 #include "qemu/osdep.h"
 #include "qemu-version.h"
 #include <machine/trap.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <sys/mman.h>
 
 #include "qapi/error.h"
 #include "qemu.h"
 #include "qemu/config-file.h"
 #include "qemu/path.h"
 #include "qemu/help_option.h"
-#include "qemu-common.h"
 #include "cpu.h"
 #include "exec/exec-all.h"
 #include "tcg.h"
@@ -37,7 +33,6 @@
 #include "qemu/envlist.h"
 #include "exec/log.h"
 #include "trace/control.h"
-#include "qemu/error-report.h"
 
 #include "host_os.h"
 #include "target_arch_cpu.h"
@@ -51,7 +46,6 @@ bool ras_thread_set = false;
 int singlestep;
 static const char *cpu_model;
 unsigned long mmap_min_addr;
-#if defined(CONFIG_USE_GUEST_BASE)
 unsigned long guest_base;
 int have_guest_base;
 #if (TARGET_LONG_BITS == 32) && (HOST_LONG_BITS == 64)
@@ -73,7 +67,6 @@ unsigned long reserved_va = 0xf7000000;
 #else
 unsigned long reserved_va;
 #endif
-#endif /* CONFIG_USE_GUEST_BASE */
 
 const char *interp_prefix = CONFIG_QEMU_INTERP_PREFIX;
 const char *qemu_uname_release;
@@ -95,7 +88,7 @@ void fork_start(void)
 {
     cpu_list_lock();
     mmap_fork_start();
-    qemu_mutex_lock(&tcg_ctx.tb_ctx.tb_lock);
+    qemu_mutex_lock(&tb_ctx.tb_lock);
 }
 
 void fork_end(int child)
@@ -111,12 +104,12 @@ void fork_end(int child)
                 QTAILQ_REMOVE(&cpus, cpu, node);
             }
         }
-        qemu_mutex_init(&tcg_ctx.tb_ctx.tb_lock);
+        qemu_mutex_init(&tb_ctx.tb_lock);
         mmap_fork_end(child);
 	qemu_init_cpu_list();
         gdbserver_fork(thread_cpu);
     } else {
-        qemu_mutex_unlock(&tcg_ctx.tb_ctx.tb_lock);
+        qemu_mutex_unlock(&tb_ctx.tb_lock);
         mmap_fork_end(child);
 	cpu_list_unlock();
     }
@@ -183,6 +176,16 @@ void stop_all_tasks(void)
      * stopping correctly.
      */
     start_exclusive();
+}
+
+bool qemu_cpu_is_self(CPUState *cpu)
+{
+    return thread_cpu == cpu;
+}
+
+void qemu_cpu_kick(CPUState *cpu)
+{
+    cpu_exit(cpu);
 }
 
 /* Assumes contents are already zeroed.  */
@@ -257,14 +260,13 @@ int main(int argc, char **argv)
     if (argc <= 1)
         usage();
 
+    save_proc_pathname(argv[0]);
+
     module_call_init(MODULE_INIT_TRACE);
     qemu_init_cpu_list();
     module_call_init(MODULE_INIT_QOM);
 
-    if ((envlist = envlist_create()) == NULL) {
-        (void) fprintf(stderr, "Unable to allocate envlist\n");
-        exit(1);
-    }
+    envlist = envlist_create();
 
     /* add current environment into the list */
     for (wrk = environ; *wrk != NULL; wrk++) {
@@ -302,10 +304,7 @@ int main(int argc, char **argv)
                 usage();
         } else if (!strcmp(r, "ignore-environment")) {
             envlist_free(envlist);
-            if ((envlist = envlist_create()) == NULL) {
-                (void) fprintf(stderr, "Unable to allocate envlist\n");
-                exit(1);
-            }
+            envlist = envlist_create();
         } else if (!strcmp(r, "U")) {
             r = argv[optind++];
             if (envlist_unsetenv(envlist, r) != 0)
@@ -375,8 +374,10 @@ int main(int argc, char **argv)
     }
 
     /* init debug */
-    if (log_file)
-    	qemu_set_log_filename(log_file);
+    if (log_file) {
+        qemu_log_needs_buffers();
+        qemu_set_log_filename(log_file, &error_fatal);
+    }
     if (log_mask) {
         int mask;
 
@@ -500,8 +501,8 @@ int main(int argc, char **argv)
     memset(ts, 0, sizeof(TaskState));
     init_task_state(ts);
     ts->info = info;
+    cpu->opaque = ts;
     ts->bprm = &bprm;
-    env->opaque = ts;
 
     target_cpu_init(env, regs);
 
