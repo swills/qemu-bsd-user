@@ -24,6 +24,7 @@
 #include "qemu-common.h"
 #include "bsd-mman.h"
 #include "exec/exec-all.h"
+//#include "translate-all.h"
 
 //#define DEBUG_MMAP
 
@@ -589,7 +590,7 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int prot,
     page_dump(stdout);
     printf("\n");
 #endif
-    tb_invalidate_phys_range(start, start + len, 0);
+    tb_invalidate_phys_range(start, start + len);
     mmap_unlock();
     return start;
 fail:
@@ -694,7 +695,7 @@ int target_munmap(abi_ulong start, abi_ulong len)
 
     if (ret == 0) {
         page_set_flags(start, start + len, 0);
-        tb_invalidate_phys_range(start, start + len, 0);
+        tb_invalidate_phys_range(start, start + len);
     }
     mmap_unlock();
     return ret;
