@@ -18,6 +18,7 @@
 
 #include <sys/types.h>
 
+#include "qemu/osdep.h"
 #include "cpu.h"
 #include "qemu.h"
 #include "qemu/timer.h"
@@ -27,7 +28,7 @@
 static uint64_t *idt_table;
 
 /* CPUX86 core interface */
-void cpu_smm_update(CPUX86State *env)
+void cpu_smm_update(X86CPU *cpu)
 {
 }
 

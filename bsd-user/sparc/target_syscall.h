@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _SPARC_SYSCALL_H_
-#define _SPARC_SYSCALL_H_
+#ifndef TARGET_SYSCALL_H
+#define TARGET_SYSCALL_H
 
 struct target_pt_regs {
 	abi_ulong psr;
@@ -33,4 +33,4 @@ struct target_pt_regs {
 #define TARGET_SPARC_UTRAP_INSTALL      1
 #define TARGET_SPARC_SIGTRAMP_INSTALL   2
 
-#endif /* ! _SPARC_SYSCALL_H_ */
+#endif /* TARGET_SYSCALL_H */

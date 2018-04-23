@@ -34,6 +34,7 @@
 
 #undef DEBUG_REMAP
 #ifdef DEBUG_REMAP
+#include <stdio.h>
 #endif /* DEBUG_REMAP */
 
 #include "exec/user/abitypes.h"
@@ -251,8 +252,6 @@ extern abi_ulong mmap_next_start;
 void mmap_lock(void);
 void mmap_unlock(void);
 abi_ulong mmap_find_vma(abi_ulong start, abi_ulong size);
-void cpu_list_lock(void);
-void cpu_list_unlock(void);
 void mmap_fork_start(void);
 void mmap_fork_end(int child);
 

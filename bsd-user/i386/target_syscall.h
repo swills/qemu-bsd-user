@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _I386_SYSCALL_H_
-#define _I386_SYSCALL_H_
+#ifndef TARGET_SYSCALL_H
+#define TARGET_SYSCALL_H
 
 /* default linux values for the selectors */
 #define __USER_CS	(0x23)
@@ -181,4 +181,4 @@ struct target_vm86plus_struct {
 #define TARGET_HW_MACHINE UNAME_MACHINE
 #define TARGET_HW_MACHINE_ARCH UNAME_MACHINE
 
-#endif /* ! _I386_SYSCALL_H_ */
+#endif /* TARGET_SYSCALL_H */

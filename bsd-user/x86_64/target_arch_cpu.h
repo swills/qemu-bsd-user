@@ -106,6 +106,8 @@ static inline void target_cpu_init(CPUX86State *env,
 
 static inline void target_cpu_loop(CPUX86State *env)
 {
+    X86CPU *cpu = x86_env_get_cpu(env); 
+    CPUState *cs = CPU(cpu); 
     int trapnr;
     abi_ulong pc;
     /* target_siginfo_t info; */
