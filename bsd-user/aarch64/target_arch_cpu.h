@@ -99,6 +99,10 @@ static inline void target_cpu_loop(CPUARMState *env)
             }
             ret = do_freebsd_syscall(env, code, arg1, arg2, arg3,
                     arg4, arg5, arg6, arg7, arg8);
+            if (ret == -TARGET_ERESTART) {
+                env->pc -= 4;
+                break;
+	        }
             /*
              * The carry bit is cleared for no error; set for error.
              * See arm64/arm64/vm_machdep.c cpu_set_syscall_retval()
@@ -107,9 +111,6 @@ static inline void target_cpu_loop(CPUARMState *env)
             if (ret >= 0) {
                 pstate &= ~PSTATE_C;
                 env->xregs[0] = ret;
-            } else if (ret == -TARGET_ERESTART) {
-                env->pc -= 4;
-                env->xregs[0] = -ret;
             } else if (ret != -TARGET_EJUSTRETURN) {
                 pstate |= PSTATE_C;
                 env->xregs[0] = -ret;

@@ -21,11 +21,16 @@
 extern char safe_syscall_start[];
 extern char safe_syscall_end[];
 
+#ifndef __FreeBSD__
+#define DEFINE_PCREG(puc)	&((ucontext_t *)(puc))->uc_mcontext.pc
+#else
+#define DEFINE_PCREG(puc)	&((ucontext_t *)(puc))->uc_mcontext.mc_gpregs.gp_lr
+#endif
+
 /* Adjust the signal context to rewind out of safe-syscall if we're in it */
 static inline void rewind_if_in_safe_syscall(void *puc)
 {
-    ucontext_t *uc = puc;
-    __u64 *pcreg = &uc->uc_mcontext.pc;
+    __u64 *pcreg = DEFINE_PCREG(puc);
 
     if (*pcreg > (uintptr_t)safe_syscall_start
         && *pcreg < (uintptr_t)safe_syscall_end) {
