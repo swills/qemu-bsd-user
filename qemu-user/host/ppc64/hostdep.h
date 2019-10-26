@@ -9,8 +9,8 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef X86_64_HOSTDEP_H
-#define X86_64_HOSTDEP_H
+#ifndef PPC64_HOSTDEP_H
+#define PPC64_HOSTDEP_H
 
 /* We have a safe-syscall.inc.S */
 #define HAVE_SAFE_SYSCALL
@@ -21,11 +21,16 @@
 extern char safe_syscall_start[];
 extern char safe_syscall_end[];
 
+#ifndef __FreeBSD__
+#define DEFINE_PCREG(puc)	&((ucontext_t *)(puc))->uc_mcontext.gp_regs[PT_NIP]
+#else
+#define DEFINE_PCREG(puc)	&((ucontext_t *)(puc))->uc_mcontext.mc_srr0
+#endif
+
 /* Adjust the signal context to rewind out of safe-syscall if we're in it */
 static inline void rewind_if_in_safe_syscall(void *puc)
 {
-    ucontext_t *uc = puc;
-    greg_t *pcreg = &uc->uc_mcontext.gregs[REG_RIP];
+    unsigned long *pcreg = DEFINE_PCREG(puc);
 
     if (*pcreg > (uintptr_t)safe_syscall_start
         && *pcreg < (uintptr_t)safe_syscall_end) {

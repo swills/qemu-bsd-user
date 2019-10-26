@@ -108,7 +108,7 @@ obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
 ifdef CONFIG_LINUX_USER
 
 QEMU_CFLAGS+=-I$(SRC_PATH)/linux-user/$(TARGET_ABI_DIR) \
-             -I$(SRC_PATH)/linux-user/host/$(ARCH) \
+             -I$(SRC_PATH)/qemu-user/host/$(ARCH) \
              -I$(SRC_PATH)/linux-user
 
 obj-y += linux-user/
@@ -123,6 +123,7 @@ ifdef CONFIG_BSD_USER
 
 QEMU_CFLAGS+=-I$(SRC_PATH)/bsd-user/$(TARGET_ABI_DIR) \
              -I$(SRC_PATH)/bsd-user/$(HOST_VARIANT_DIR) \
+             -I$(SRC_PATH)/qemu-user/host/$(ARCH) \
              -I$(SRC_PATH)/bsd-user \
              -D_WANT_SEMUN
 obj-y += bsd-user/

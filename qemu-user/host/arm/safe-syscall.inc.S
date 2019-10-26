@@ -13,7 +13,14 @@
 	.global safe_syscall_base
 	.global safe_syscall_start
 	.global safe_syscall_end
-	.type	safe_syscall_base, @function
+	.type	safe_syscall_base, %function
+
+	.cfi_sections	.debug_frame
+
+	.text
+	.syntax unified
+	.arm
+	.align 2
 
 	/* This is the entry point for making a system call. The calling
 	 * convention here is that of a C varargs function with the
@@ -25,39 +32,36 @@
 	 * -1-and-errno-set convention is done by the calling wrapper.
 	 */
 safe_syscall_base:
+	.fnstart
 	.cfi_startproc
-	push	%ebp
-	.cfi_adjust_cfa_offset 4
-	.cfi_rel_offset ebp, 0
-	push	%esi
-	.cfi_adjust_cfa_offset 4
-	.cfi_rel_offset esi, 0
-	push	%edi
-	.cfi_adjust_cfa_offset 4
-	.cfi_rel_offset edi, 0
-	push	%ebx
-	.cfi_adjust_cfa_offset 4
-	.cfi_rel_offset ebx, 0
+	mov	r12, sp			/* save entry stack */
+	push	{ r4, r5, r6, r7, r8, lr }
+	.save	{ r4, r5, r6, r7, r8, lr }
+	.cfi_adjust_cfa_offset 24
+	.cfi_rel_offset r4, 0
+	.cfi_rel_offset r5, 4
+	.cfi_rel_offset r6, 8
+	.cfi_rel_offset r7, 12
+	.cfi_rel_offset r8, 16
+	.cfi_rel_offset lr, 20
 
 	/* The syscall calling convention isn't the same as the C one:
-	 * we enter with 0(%esp) == return address
-	 *               4(%esp) == *signal_pending
-	 *               8(%esp) == syscall number
-	 *               12(%esp) ... 32(%esp) == syscall arguments
-	 *               and return the result in eax
+	 * we enter with r0 == *signal_pending
+	 *               r1 == syscall number
+	 *               r2, r3, [sp+0] ... [sp+12] == syscall arguments
+	 *               and return the result in r0
 	 * and the syscall instruction needs
-	 *               eax == syscall number
-	 *               ebx, ecx, edx, esi, edi, ebp == syscall arguments
-	 *               and returns the result in eax
+	 *               r7 == syscall number
+	 *               r0 ... r6 == syscall arguments
+	 *               and returns the result in r0
 	 * Shuffle everything around appropriately.
 	 * Note the 16 bytes that we pushed to save registers.
 	 */
-	mov	12+16(%esp), %ebx	/* the syscall arguments */
-	mov	16+16(%esp), %ecx
-	mov	20+16(%esp), %edx
-	mov	24+16(%esp), %esi
-	mov	28+16(%esp), %edi
-	mov	32+16(%esp), %ebp
+	mov	r8, r0			/* copy signal_pending */
+	mov	r7, r1			/* syscall number */
+	mov	r0, r2			/* syscall args */
+	mov	r1, r3
+	ldm	r12, { r2, r3, r4, r5, r6 }
 
 	/* This next sequence of code works in conjunction with the
 	 * rewind_if_safe_syscall_function(). If a signal is taken
@@ -68,33 +72,24 @@ safe_syscall_base:
 	 */
 safe_syscall_start:
 	/* if signal_pending is non-zero, don't do the call */
-	mov	4+16(%esp), %eax	/* signal_pending */
-	cmpl	$0, (%eax)
-	jnz	1f
-	mov	8+16(%esp), %eax	/* syscall number */
-	int	$0x80
+	ldr	r12, [r8]		/* signal_pending */
+	tst	r12, r12
+	bne	1f
+	swi	0
 safe_syscall_end:
 	/* code path for having successfully executed the syscall */
-	pop	%ebx
-	.cfi_remember_state
-	.cfi_adjust_cfa_offset -4
-	.cfi_restore ebx
-	pop	%edi
-	.cfi_adjust_cfa_offset -4
-	.cfi_restore edi
-	pop	%esi
-	.cfi_adjust_cfa_offset -4
-	.cfi_restore esi
-	pop	%ebp
-	.cfi_adjust_cfa_offset -4
-	.cfi_restore ebp
-	ret
+#ifdef __FreeBSD__
+	bcc 2f
+	neg r0, r0
+2:
+#endif
+	pop	{ r4, r5, r6, r7, r8, pc }
 
 1:
 	/* code path when we didn't execute the syscall */
-	.cfi_restore_state
-	mov	$-TARGET_ERESTARTSYS, %eax
-	jmp	safe_syscall_end
+	ldr	r0, =-TARGET_ERESTARTSYS
+	pop	{ r4, r5, r6, r7, r8, pc }
+	.fnend
 	.cfi_endproc
 
 	.size	safe_syscall_base, .-safe_syscall_base
