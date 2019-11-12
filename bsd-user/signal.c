@@ -123,6 +123,25 @@ static inline void target_sigemptyset(target_sigset_t *set)
     memset(set, 0, sizeof(*set));
 }
 
+#if !defined(__FreeBSD__) || !defined(__FreeBSD_version) || \
+    __FreeBSD_version < 1400000
+#include <signal.h>
+
+int
+sigorset(sigset_t *dest, const sigset_t *left, const sigset_t *right)
+{
+    int i;
+
+    sigemptyset(dest);
+    for (i = 1; i < NSIG; ++i) {
+        if (sigismember(left, i) || sigismember(right, i))
+            sigaddset(dest, i);
+    }
+
+    return (0);
+}
+#endif
+
 static inline void target_sigaddset(target_sigset_t *set, int signum)
 {
 

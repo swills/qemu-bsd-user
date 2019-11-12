@@ -21,21 +21,7 @@
 
 #if !defined(__FreeBSD__) || !defined(__FreeBSD_version) || \
     __FreeBSD_version < 1400000
-#include <signal.h>
-
-inline int
-sigorset(sigset_t *dest, const sigset_t *left, const sigset_t *right)
-{
-    int i;
-
-    sigemptyset(dest);
-    for (i = 1; i < NSIG; ++i) {
-        if (sigismember(left, i) || sigismember(right, i))
-            sigaddset(dest, i);
-    }
-
-    return (0);
-}
+int sigorset(sigset_t *dest, const sigset_t *left, const sigset_t *right);
 #endif
 
 #if defined(__FreeBSD_version) && __FreeBSD_version >= 1200031
