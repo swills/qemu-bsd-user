@@ -156,6 +156,9 @@ static inline void target_cpu_loop(CPUARMState *env)
             cpu_exec_step_atomic(cs);
             break;
 
+        case EXCP_YIELD:
+            break;
+
         default:
             fprintf(stderr, "qemu: unhandled CPU exception 0x%x - aborting\n",
                     trapnr);
